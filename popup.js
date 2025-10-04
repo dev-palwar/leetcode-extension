@@ -1,77 +1,163 @@
-async function getCookieHeader() {
-  const cookies = await chrome.cookies.getAll({ domain: "leetcode.com" });
-  return cookies.map((c) => `${c.name}=${c.value}`).join("; ");
-}
+document
+  .getElementById("fetchBtn")
+  .addEventListener("click", fetchSolvedProblems);
 
-async function fetchAllAcceptedProblems() {
-  let offset = 40;
-  const limit = 20;
-  let lastKey = "";
-  let hasNext = true;
-  const accepted = new Map();
+async function fetchSolvedProblems() {
+  const fetchBtn = document.getElementById("fetchBtn");
+  const loading = document.getElementById("loading");
+  const errorDiv = document.getElementById("error");
+  const statsDiv = document.getElementById("stats");
+  const problemsDiv = document.getElementById("problems");
 
-  const cookieHeader = await getCookieHeader();
-
-  while (hasNext) {
-    const url = `https://leetcode.com/api/submissions/?offset=${offset}&limit=${limit}&lastkey=${lastKey}`;
-
-    const res = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        Cookie: cookieHeader,
-        Referer: "https://leetcode.com/submissions/",
-        "X-Requested-With": "XMLHttpRequest",
-      },
-    });
-
-    const data = await res.json();
-
-    for (const sub of data.submissions_dump || []) {
-      if (sub.status_display === "Accepted" && !accepted.has(sub.title_slug)) {
-        accepted.set(sub.title_slug, {
-          title: sub.title,
-          titleSlug: sub.title_slug,
-          lang: sub.lang,
-          timestamp: sub.timestamp,
-        });
-      }
-    }
-
-    hasNext = data.has_next;
-    lastKey = data.last_key || "";
-    offset += limit;
-  }
-
-  return [...accepted.values()];
-}
-
-function downloadJSON(data, filename = "solved_problems.json") {
-  const blob = new Blob([JSON.stringify(data, null, 2)], {
-    type: "application/json",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-
-  a.href = url;
-  a.download = filename;
-  a.style.display = "none";
-
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-document.getElementById("fetchBtn").addEventListener("click", async () => {
-  const output = document.getElementById("output");
-  output.textContent = "Fetching your accepted problems...";
+  // Reset UI
+  fetchBtn.disabled = true;
+  loading.style.display = "block";
+  errorDiv.style.display = "none";
+  statsDiv.style.display = "none";
+  problemsDiv.innerHTML = "";
 
   try {
-    const solved = await fetchAllAcceptedProblems();
-    downloadJSON(solved, "devpalwar_solved_problems.json");
+    // Get user's username first
+    const profileResponse = await fetch(
+      "https://leetcode.com/api/problems/all/",
+      {
+        credentials: "include",
+      }
+    );
 
-    output.textContent = `✅ Downloaded ${solved.length} accepted problems as JSON.`;
-  } catch (err) {
-    output.textContent = `❌ Error: ${err.message}`;
+    if (!profileResponse.ok) {
+      throw new Error(
+        "Failed to fetch data. Make sure you are logged in to LeetCode."
+      );
+    }
+
+    const data = await profileResponse.json();
+
+    // Filter solved problems
+    const solvedProblems = data.stat_status_pairs.filter(
+      (problem) => problem.status === "ac"
+    );
+
+    // Display stats
+    statsDiv.innerHTML = `
+      <div class="stat-item">
+        <span class="stat-label">Total Solved:</span> ${solvedProblems.length}
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Total Problems:</span> ${data.stat_status_pairs.length}
+      </div>
+    `;
+    statsDiv.style.display = "block";
+
+    // Display problems
+    if (solvedProblems.length === 0) {
+      problemsDiv.innerHTML = "<p>No solved problems found.</p>";
+    } else {
+      // Sort by frontend_question_id
+      solvedProblems.sort(
+        (a, b) => a.stat.frontend_question_id - b.stat.frontend_question_id
+      );
+
+      solvedProblems.forEach((problem) => {
+        const problemItem = document.createElement("div");
+        problemItem.className = "problem-item";
+
+        const difficulty = getDifficultyText(problem.difficulty.level);
+        const difficultyClass = `difficulty-${difficulty.toLowerCase()}`;
+
+        problemItem.innerHTML = `
+          <div class="problem-title">
+            ${problem.stat.frontend_question_id}. ${
+          problem.stat.question__title
+        }
+          </div>
+          <div class="problem-meta">
+            <span class="${difficultyClass}">${difficulty}</span> |
+            AC Rate: ${(
+              (problem.stat.total_acs / problem.stat.total_submitted) *
+              100
+            ).toFixed(1)}%
+          </div>
+        `;
+
+        problemsDiv.appendChild(problemItem);
+      });
+    }
+
+    // Save to storage
+    browser.storage.local.set({
+      solvedProblems: solvedProblems,
+      lastFetched: new Date().toISOString(),
+    });
+  } catch (error) {
+    errorDiv.textContent = error.message;
+    errorDiv.style.display = "block";
+    console.error("Error:", error);
+  } finally {
+    loading.style.display = "none";
+    fetchBtn.disabled = false;
+  }
+}
+
+function getDifficultyText(level) {
+  switch (level) {
+    case 1:
+      return "Easy";
+    case 2:
+      return "Medium";
+    case 3:
+      return "Hard";
+    default:
+      return "Unknown";
+  }
+}
+
+// Load cached data on popup open
+window.addEventListener("load", async () => {
+  const data = await browser.storage.local.get([
+    "solvedProblems",
+    "lastFetched",
+  ]);
+
+  if (data.solvedProblems && data.solvedProblems.length > 0) {
+    const statsDiv = document.getElementById("stats");
+    const problemsDiv = document.getElementById("problems");
+
+    statsDiv.innerHTML = `
+      <div class="stat-item">
+        <span class="stat-label">Total Solved:</span> ${
+          data.solvedProblems.length
+        }
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">Last Updated:</span> ${new Date(
+          data.lastFetched
+        ).toLocaleString()}
+      </div>
+    `;
+    statsDiv.style.display = "block";
+
+    data.solvedProblems.forEach((problem) => {
+      const problemItem = document.createElement("div");
+      problemItem.className = "problem-item";
+
+      const difficulty = getDifficultyText(problem.difficulty.level);
+      const difficultyClass = `difficulty-${difficulty.toLowerCase()}`;
+
+      problemItem.innerHTML = `
+        <div class="problem-title">
+          ${problem.stat.frontend_question_id}. ${problem.stat.question__title}
+        </div>
+        <div class="problem-meta">
+          <span class="${difficultyClass}">${difficulty}</span> |
+          AC Rate: ${(
+            (problem.stat.total_acs / problem.stat.total_submitted) *
+            100
+          ).toFixed(1)}%
+        </div>
+      `;
+
+      problemsDiv.appendChild(problemItem);
+    });
   }
 });

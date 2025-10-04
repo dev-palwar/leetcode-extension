@@ -2,26 +2,118 @@
 <html>
 
 <head>
-    <title>Fetch LeetCode Data</title>
+    <meta charset="utf-8">
     <style>
         body {
-            font-family: sans-serif;
+            width: 400px;
+            padding: 15px;
+            font-family: Arial, sans-serif;
+            margin: 0;
+        }
+
+        h2 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+        }
+
+        #loading {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+        }
+
+        #error {
+            color: #e74c3c;
             padding: 10px;
-            width: 250px;
+            background: #fadbd8;
+            border-radius: 4px;
+            display: none;
+        }
+
+        #stats {
+            background: #ecf0f1;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .stat-item {
+            margin: 5px 0;
+        }
+
+        .stat-label {
+            font-weight: bold;
+            color: #34495e;
+        }
+
+        #problems {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .problem-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: #f8f9fa;
+            border-radius: 4px;
+            border-left: 3px solid #3498db;
+        }
+
+        .problem-title {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .problem-meta {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .difficulty-easy {
+            color: #27ae60;
+        }
+
+        .difficulty-medium {
+            color: #f39c12;
+        }
+
+        .difficulty-hard {
+            color: #e74c3c;
         }
 
         button {
-            margin-top: 10px;
+            width: 100%;
+            padding: 10px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
         }
     </style>
 </head>
 
 <body>
-    <h3>LeetCode Fetcher</h3>
-    <button id="fetchBtn">Download Solved Problems</button>
-    <pre id="output" style="white-space: pre-wrap; font-size: 13px;"></pre>
-
-    <script type="module" src="popup.js"></script>
+    <h2>LeetCode Solved Problems</h2>
+    <button id="fetchBtn">Fetch Solved Problems</button>
+    <div id="loading" style="display: none;">Loading...</div>
+    <div id="error"></div>
+    <div id="stats"></div>
+    <div id="problems"></div>
+    <script src="popup.js"></script>
 </body>
 
 </html>

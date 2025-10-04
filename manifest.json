@@ -1,19 +1,15 @@
 {
-    "manifest_version": 3,
-    "name": "LeetCode Submission Fetcher",
+    "manifest_version": 2,
+    "name": "LeetCode Solved Problems",
     "version": "1.0",
+    "description": "Fetches your solved LeetCode problems",
     "permissions": [
-        "cookies",
-        "activeTab",
-        "scripting"
+        "https://leetcode.com/*",
+        "storage"
     ],
-    "host_permissions": [
-        "https://leetcode.com/*"
-    ],
-    "action": {
-        "default_popup": "popup.html"
+    "browser_action": {
+        "default_popup": "popup.html",
+        "default_icon": {}
     },
-    "background": {
-        "service_worker": "background.js"
-    }
+    "icons": {}
 }
