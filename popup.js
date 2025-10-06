@@ -1,6 +1,26 @@
 document
   .getElementById("fetchBtn")
   .addEventListener("click", fetchSolvedProblems);
+document.getElementById("exportBtn").addEventListener("click", exportToApp);
+
+// Load API endpoint from storage
+window.addEventListener("load", async () => {
+  const settings = await browser.storage.local.get(["apiEndpoint"]);
+  if (settings.apiEndpoint) {
+    document.getElementById("apiEndpoint").value = settings.apiEndpoint;
+  } else {
+    document.getElementById("apiEndpoint").value =
+      "https://leetcode-solved-problems-tracker.vercel.app/api/leetcode";
+  }
+
+  // Load cached problems
+  loadCachedProblems();
+});
+
+// Save API endpoint when changed
+document.getElementById("apiEndpoint").addEventListener("change", async (e) => {
+  await browser.storage.local.set({ apiEndpoint: e.target.value });
+});
 
 async function fetchSolvedProblems() {
   const fetchBtn = document.getElementById("fetchBtn");
@@ -89,6 +109,9 @@ async function fetchSolvedProblems() {
       solvedProblems: solvedProblems,
       lastFetched: new Date().toISOString(),
     });
+
+    // Show export button
+    document.getElementById("exportBtn").style.display = "block";
   } catch (error) {
     errorDiv.textContent = error.message;
     errorDiv.style.display = "block";
@@ -96,6 +119,79 @@ async function fetchSolvedProblems() {
   } finally {
     loading.style.display = "none";
     fetchBtn.disabled = false;
+  }
+}
+
+async function exportToApp() {
+  const exportBtn = document.getElementById("exportBtn");
+  const loading = document.getElementById("loading");
+  const errorDiv = document.getElementById("error");
+  const successDiv = document.getElementById("success");
+  const apiEndpoint = document.getElementById("apiEndpoint").value;
+
+  // Reset UI
+  exportBtn.disabled = true;
+  loading.style.display = "block";
+  errorDiv.style.display = "none";
+  successDiv.style.display = "none";
+
+  try {
+    // Get stored data
+    const data = await browser.storage.local.get([
+      "solvedProblems",
+      "lastFetched",
+    ]);
+
+    if (!data.solvedProblems || data.solvedProblems.length === 0) {
+      throw new Error("No data to export. Please fetch solved problems first.");
+    }
+
+    // Format data for export
+    const exportData = {
+      totalSolved: data.solvedProblems.length,
+      lastFetched: data.lastFetched,
+      problems: data.solvedProblems.map((p) => ({
+        id: p.stat.frontend_question_id,
+        title: p.stat.question__title,
+        titleSlug: p.stat.question__title_slug,
+        difficulty: getDifficultyText(p.difficulty.level),
+        difficultyLevel: p.difficulty.level,
+        acceptanceRate: parseFloat(
+          ((p.stat.total_acs / p.stat.total_submitted) * 100).toFixed(1)
+        ),
+        totalAccepted: p.stat.total_acs,
+        totalSubmissions: p.stat.total_submitted,
+        isPaidOnly: p.paid_only,
+      })),
+    };
+
+    // Send to App
+    const response = await fetch(apiEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(exportData),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to export: ${response.status} - ${errorText}`);
+    }
+
+    const result = await response.json();
+
+    successDiv.textContent = `✓ Successfully exported ${data.solvedProblems.length} problems!`;
+    successDiv.style.display = "block";
+
+    console.log("Export successful:", result);
+  } catch (error) {
+    errorDiv.textContent = error.message;
+    errorDiv.style.display = "block";
+    console.error("Export error:", error);
+  } finally {
+    loading.style.display = "none";
+    exportBtn.disabled = false;
   }
 }
 
@@ -113,7 +209,7 @@ function getDifficultyText(level) {
 }
 
 // Load cached data on popup open
-window.addEventListener("load", async () => {
+async function loadCachedProblems() {
   const data = await browser.storage.local.get([
     "solvedProblems",
     "lastFetched",
@@ -159,5 +255,8 @@ window.addEventListener("load", async () => {
 
       problemsDiv.appendChild(problemItem);
     });
+
+    // Show export button if data exists
+    document.getElementById("exportBtn").style.display = "block";
   }
-});
+}
