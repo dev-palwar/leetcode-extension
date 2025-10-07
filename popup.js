@@ -10,7 +10,7 @@ window.addEventListener("load", async () => {
     document.getElementById("apiEndpoint").value = settings.apiEndpoint;
   } else {
     document.getElementById("apiEndpoint").value =
-      "https://leetcode-solved-problems-tracker.vercel.app/api/leetcode";
+      "https://revise-leetcode.vercel.app/api/leetcode";
   }
 
   // Load cached problems
