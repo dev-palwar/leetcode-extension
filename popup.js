@@ -3,7 +3,7 @@ document
   .addEventListener("click", fetchSolvedProblems);
 document.getElementById("exportBtn").addEventListener("click", exportToApp);
 
-// Load API endpoint from storage
+// Loads API endpoint from storage
 window.addEventListener("load", async () => {
   const settings = await browser.storage.local.get(["apiEndpoint"]);
   if (settings.apiEndpoint) {
@@ -13,11 +13,11 @@ window.addEventListener("load", async () => {
       "https://revise-leetcode.vercel.app/api/leetcode";
   }
 
-  // Load cached problems
+  // Loads cached problems
   loadCachedProblems();
 });
 
-// Save API endpoint when changed
+// Saves API endpoint when changed
 document.getElementById("apiEndpoint").addEventListener("change", async (e) => {
   await browser.storage.local.set({ apiEndpoint: e.target.value });
 });
@@ -29,7 +29,7 @@ async function fetchSolvedProblems() {
   const statsDiv = document.getElementById("stats");
   const problemsDiv = document.getElementById("problems");
 
-  // Reset UI
+  // Resets UI
   fetchBtn.disabled = true;
   loading.style.display = "block";
   errorDiv.style.display = "none";
@@ -37,7 +37,7 @@ async function fetchSolvedProblems() {
   problemsDiv.innerHTML = "";
 
   try {
-    // Get user's username first
+    // Gets user's username first
     const profileResponse = await fetch(
       "https://leetcode.com/api/problems/all/",
       {
@@ -53,12 +53,12 @@ async function fetchSolvedProblems() {
 
     const data = await profileResponse.json();
 
-    // Filter solved problems
+    // Filters solved problems
     const solvedProblems = data.stat_status_pairs.filter(
       (problem) => problem.status === "ac"
     );
 
-    // Display stats
+    // Displays stats
     statsDiv.innerHTML = `
       <div class="stat-item">
         <span class="stat-label">Total Solved:</span> ${solvedProblems.length}
@@ -69,11 +69,12 @@ async function fetchSolvedProblems() {
     `;
     statsDiv.style.display = "block";
 
-    // Display problems
+    // Displays problems
     if (solvedProblems.length === 0) {
-      problemsDiv.innerHTML = "<p>No solved problems found.</p>";
+      problemsDiv.innerHTML =
+        "<p>No solved problems found.</p> <p>Or maybe you're not logged in Leetcode.</p>";
     } else {
-      // Sort by frontend_question_id
+      // Sorts by frontend_question_id
       solvedProblems.sort(
         (a, b) => a.stat.frontend_question_id - b.stat.frontend_question_id
       );
@@ -104,13 +105,13 @@ async function fetchSolvedProblems() {
       });
     }
 
-    // Save to storage
+    // Saves to storage
     browser.storage.local.set({
       solvedProblems: solvedProblems,
       lastFetched: new Date().toISOString(),
     });
 
-    // Show export button
+    // Shows export button
     document.getElementById("exportBtn").style.display = "block";
   } catch (error) {
     errorDiv.textContent = error.message;
@@ -129,14 +130,14 @@ async function exportToApp() {
   const successDiv = document.getElementById("success");
   const apiEndpoint = document.getElementById("apiEndpoint").value;
 
-  // Reset UI
+  // Resets UI
   exportBtn.disabled = true;
   loading.style.display = "block";
   errorDiv.style.display = "none";
   successDiv.style.display = "none";
 
   try {
-    // Get stored data
+    // Gets stored data
     const data = await browser.storage.local.get([
       "solvedProblems",
       "lastFetched",
@@ -146,7 +147,7 @@ async function exportToApp() {
       throw new Error("No data to export. Please fetch solved problems first.");
     }
 
-    // Format data for export
+    // Formats data for export
     const exportData = {
       totalSolved: data.solvedProblems.length,
       lastFetched: data.lastFetched,
@@ -165,7 +166,7 @@ async function exportToApp() {
       })),
     };
 
-    // Send to App
+    // Sends to App
     const response = await fetch(apiEndpoint, {
       method: "POST",
       headers: {
@@ -208,7 +209,7 @@ function getDifficultyText(level) {
   }
 }
 
-// Load cached data on popup open
+// Loads cached data on popup open
 async function loadCachedProblems() {
   const data = await browser.storage.local.get([
     "solvedProblems",
@@ -256,7 +257,7 @@ async function loadCachedProblems() {
       problemsDiv.appendChild(problemItem);
     });
 
-    // Show export button if data exists
+    // Shows export button if data exists
     document.getElementById("exportBtn").style.display = "block";
   }
 }

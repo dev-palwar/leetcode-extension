@@ -1,17 +1,31 @@
 {
-    "manifest_version": 2,
-    "name": "LeetCode Solved Problems",
-    "version": "1.0",
+    "manifest_version": 3,
+    "name": "Recode",
+    "version": "2.0",
     "description": "Fetches your solved LeetCode problems",
     "permissions": [
-        "https://leetcode.com/*",
         "storage",
+        "scripting",
+        "activeTab"
+    ],
+    "host_permissions": [
+        "https://leetcode.com/*",
         "<all_urls>"
     ],
-    "content_security_policy": "script-src 'self'; object-src 'self'; connect-src *",
-    "browser_action": {
-        "default_popup": "popup.html",
-        "default_icon": {}
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
     },
-    "icons": {}
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        }
+    },
+    "content_security_policy": {
+        "extension_pages": "script-src 'self'; object-src 'self'; connect-src *"
+    }
 }

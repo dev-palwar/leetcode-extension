@@ -1,6 +1,5 @@
-// contentScript.js
 (() => {
-  // Wait for LeetCode problem table or page data
+  // Waits for LeetCode problem table or page data
   const fetchACProblems = () => {
     let problems = [];
 
